@@ -8,16 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-@app.route("/", methods=['GET', 'POST'])
-def psi09():
-    if request.method == 'POST':
-        data = request.get_json() or request.form
-        message = data.get('message')
-        phone_number = data.get('phone_number')
-    else:
-        message = request.args.get('message')
-        phone_number = request.args.get('phone_number')
-    
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Roastbot system prompt
@@ -60,11 +51,15 @@ def save_memory():
         json.dump(memory, f)
 
 
-@app.route("/psi09", methods=["POST"])
+@app.route("/psi09", methods=["GET", "POST"])
 def psi09():
-    data = request.get_json()
-    user_msg = data.get("message")
-    phone_number = data.get("phone_number")
+    if request.method == "POST":
+        data = request.get_json() or request.form
+        user_msg = data.get("message")
+        phone_number = data.get("phone_number")
+    else:
+        user_msg = request.args.get("message")
+        phone_number = request.args.get("phone_number")
 
     if not user_msg or not phone_number:
         return jsonify({"error": "Missing message or phone_number"}), 400
@@ -74,19 +69,17 @@ def psi09():
     conversation.append({"role": "user", "content": user_msg})
 
     # Build message window
-    trimmed = False
     while True:
         window = [ROASTBOT_PROMPT] + conversation[-20:]  # last 20 exchanges
         if count_tokens(window) <= MAX_TOKENS:
             break
         conversation.pop(0)
-        trimmed = True
 
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=window,
-            temperature=0.9
+            temperature=1.3
         )
         reply = response.choices[0].message.content
     except Exception as e:
@@ -99,5 +92,9 @@ def psi09():
     return jsonify({"response": reply})
 
 
+@app.route("/", methods=["GET"])
+def index():
+    return "PSI-09 Roastbot is live. Use /psi09 with ?message=...&phone_number=..."
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=10000, debug=True)
