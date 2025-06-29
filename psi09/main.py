@@ -8,9 +8,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-@app.route("/", methods=["GET"])
-def index():
-    return "PSI-09 Roastbot is running on Render!", 200
+@app.route('/psi09', methods=['GET', 'POST'])
+def psi09():
+    if request.method == 'POST':
+        data = request.get_json() or request.form
+        message = data.get('message')
+        phone_number = data.get('phone_number')
+    else:
+        message = request.args.get('message')
+        phone_number = request.args.get('phone_number')
     
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
