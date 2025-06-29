@@ -8,7 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-
+@app.route("/", methods=["GET"])
+def index():
+    return "PSI-09 Roastbot is running on Render!", 200
+    
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Roastbot system prompt
