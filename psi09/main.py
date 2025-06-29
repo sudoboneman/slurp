@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-@app.route('/psi09', methods=['GET', 'POST'])
+@app.route("/", methods=['GET', 'POST'])
 def psi09():
     if request.method == 'POST':
         data = request.get_json() or request.form
