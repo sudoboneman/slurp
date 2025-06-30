@@ -100,5 +100,5 @@ Coming up: ✅ WhatsAuto + AutoResponder integration ✅ Message forwarding from
 
 ## 🧠 Credits
 
-Built by [Supratim Halder (sudoboneman)](https://github.com/boneman) at age 17. With the help of ChatGPT, coffee, Linux, and raw determination.
+Built by [Supratim Halder (sudoboneman)](https://github.com/sudoboneman) at age 17. With the help of ChatGPT, coffee, Linux, and raw determination.
 
