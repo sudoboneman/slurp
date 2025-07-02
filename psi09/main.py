@@ -54,14 +54,21 @@ def get_roast_response(user_message, phone_number):
 
     messages = [system_prompt] + trimmed_chat
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-        max_tokens=170,
-        temperature=0.8
-    )
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=messages,
+            max_tokens=170,
+            temperature=0.7
+        )
 
-    reply = response.choices[0].message.content
+        reply = response.choices[0].message.content
+
+    except OpenAIError as e:
+        return f"OpenAI API error: {str(e)}"
+    except Exception as e:
+        return f"Server error: {str(e)}"
+
     chat.append({"role": "assistant", "content": reply})
     chat_history[phone_number] = chat
 
@@ -73,11 +80,6 @@ def get_roast_response(user_message, phone_number):
 @app.route("/psi09", methods=["POST"])
 def psi09():
     try:
-        if request.method == "GET":
-            if request.args.get("message") == "ping":
-                return jsonify({"response": "pong"}), 200
-            return jsonify({"error": "Only POST with proper query supported"}), 405
-
         data = request.get_json()
         if not data or "query" not in data:
             return jsonify({"error": "Missing query field"}), 400
