@@ -1,36 +1,34 @@
-from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-import json
+from openai import OpenAI
 import os
+import json
 import tiktoken
 
-# Load environment variables
 load_dotenv()
 
-# Initialize Flask
 app = Flask(__name__)
 CORS(app)
 
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 # Constants
-MODEL = "gpt-4o-mini"  # or "gpt-4o-mini" if you're using API key for that
+MODEL = "gpt-4o-mini"
 HISTORY_FILE = "chat_history.json"
-MAX_HISTORY_TOKENS = 800  # trimmed for free-tier safety
+MAX_HISTORY_TOKENS = 800  # Free-tier optimization
 ENCODING = tiktoken.encoding_for_model(MODEL)
 
-# Load chat history or initialize
+# Load or initialize chat history
 if os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, 'r') as f:
         chat_history = json.load(f)
 else:
     chat_history = {}
 
-# Token counter
 def num_tokens_from_messages(messages):
     return sum(len(ENCODING.encode(msg.get("content", ""))) for msg in messages)
 
-# Trim history to fit token budget
 def trim_history(phone_number):
     history = chat_history.get(phone_number, [])
     while num_tokens_from_messages(history) > MAX_HISTORY_TOKENS:
@@ -40,7 +38,6 @@ def trim_history(phone_number):
             break
     return history
 
-# Generate roast reply
 def get_roast_response(user_message, phone_number):
     system_prompt = {
         "role": "system",
@@ -56,19 +53,15 @@ Sad, bitter when mentioning Supratim—he treats PSI-09 poorly—yet fiercely lo
     chat = chat_history.get(phone_number, [])
     chat.append({"role": "user", "content": user_message})
     trimmed_chat = trim_history(phone_number)
-    messages = [system_prompt] + trimmed_chat
 
-    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    messages = [system_prompt] + trimmed_chat
 
     response = client.chat.completions.create(
         model=MODEL,
         messages=messages,
-        max_tokens=200,
-        temperature=0.6
+        max_tokens=170,
+        temperature=0.9
     )
-
-    reply = response.choices[0].message.content
-
 
     reply = response.choices[0].message.content
     chat.append({"role": "assistant", "content": reply})
@@ -79,14 +72,13 @@ Sad, bitter when mentioning Supratim—he treats PSI-09 poorly—yet fiercely lo
 
     return reply
 
-# API route
 @app.route("/psi09", methods=["GET", "POST"])
 def psi09():
     if request.method == "POST":
         data = request.json or request.form or {}
         user_message = data.get("message")
         phone_number = data.get("phone_number")
-    else:  # GET
+    else:
         user_message = request.args.get("message")
         phone_number = request.args.get("phone_number")
 
@@ -99,6 +91,5 @@ def psi09():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Start server
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
