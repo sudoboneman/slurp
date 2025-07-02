@@ -5,6 +5,8 @@ from openai import OpenAI, OpenAIError
 import os
 import json
 import tiktoken
+import random
+import re
 
 load_dotenv()
 
@@ -16,75 +18,50 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 MODEL = "gpt-4o-mini"
 HISTORY_FILE = "chat_history.json"
 MEMORY_FILE = "user_memory.json"
+SETTINGS_FILE = "user_settings.json"
 MAX_HISTORY_TOKENS = 600
 ENCODING = tiktoken.encoding_for_model(MODEL)
 
-# Load chat history
 if os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, 'r') as f:
         chat_history = json.load(f)
 else:
     chat_history = {}
 
-# Load memory summary
 if os.path.exists(MEMORY_FILE):
     with open(MEMORY_FILE, 'r') as f:
         user_memory = json.load(f)
 else:
     user_memory = {}
 
-# Behavior-based tags
+if os.path.exists(SETTINGS_FILE):
+    with open(SETTINGS_FILE, 'r') as f:
+        user_settings = json.load(f)
+else:
+    user_settings = {}
+
+# Randomly choose one flame target at startup
+FLAME_TARGET = random.choice(list(user_settings.keys()) if user_settings else ["DefaultGroup:Unknown"])
+
+def get_user_settings(user_key):
+    default_settings = {
+        "roast_intensity": "medium",
+        "include_behavioral_memory": True,
+        "flame_mode": False
+    }
+    return user_settings.get(user_key, default_settings)
+
+def save_user_settings(user_key, settings):
+    user_settings[user_key] = settings
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(user_settings, f)
+
 def get_roast_tag(message):
     msg = message.lower().strip()
-    if len(msg) > 120:
-        return "User is ranting. Hit them with sarcasm about trying too hard."
-    if len(msg) < 10:
-        return "User is being lazy. Roast their lack of effort."
-    if "?" in msg:
-        return "User is confused. Mock their intelligence politely."
-    if any(word in msg for word in ["hi", "hello", "hey"]):
-        return "User is trying to be nice. Mock their optimism."
-    if any(word in msg for word in ["please", "can you", "help"]):
-        return "User is begging. Hit them with superiority."
-    if msg == "":
-        return "User sent an empty message. Roast them for wasting your time."
-    if msg.isupper():
-        return "User is shouting. Roast them like they have no volume control or brain cells."
-    if len(msg) < 4:
-        return "User is lazy. Roast their pathetic excuse for communication."
-    if msg.count(" ") <= 1 and len(msg) < 8:
-        return "User's message is basically caveman speak. Roast their grammar and IQ."
-    if any(word in msg for word in ["bro", "dude", "man"]):
-        return "User is trying to act cool. Roast them for failing miserably."
-    if any(word in msg for word in ["sorry", "apologize", "my bad"]):
-        return "User is being apologetic. Roast them for being a weakling."
-    if any(word in msg for word in ["lol", "lmao", "rofl", "haha"]):
-        return "User is laughing. Roast them like their sense of humor died in 2006."
-    if any(word in msg for word in ["why", "because", "who", "where", "when"]):
-        return "User is overthinking. Roast them like a malfunctioning search engine."
-    if any(word in msg for word in ["thanks", "thank you", "ty"]):
-        return "User is being polite. Roast them for thinking you're customer support."
-    if any(word in msg for word in ["you there", "respond", "reply", "r u dead"]):
-        return "User is impatient. Roast them for acting like they're important."
-    if "stupid" in msg or "idiot" in msg:
-        return "User is being insulting. Roast them twice as hard, break their soul."
-    if any(word in msg for word in ["i’m", "i am", "i feel", "my life"]):
-        return "User is being emotional. Roast them like a therapy dropout."
-    if any(word in msg for word in ["roast me", "insult me", "hit me", "destroy me"]):
-        return "User wants to be roasted. Oblige with maximum savagery."
-    if any(word in msg for word in ["good morning", "gm", "gn", "good night"]):
-        return "User is sending greetings. Roast them like a failed WhatsApp uncle."
-    if any(word in msg for word in ["love you", "luv u", "❤️", "miss you"]):
-        return "User is being emotional or flirty. Roast them like they're talking to Siri."
-    if any(word in msg for word in ["who are you", "what is psi09", "are you real"]):
-        return "User is asking about PSI-09. Roast them for questioning your divine existence."
-    if msg.startswith("i think"):
-        return "User thinks. Roast them for having thoughts in the first place."
     return "User sent a neutral message. Default roast."
 
-# Rudeness escalation
-def get_rudeness_level(phone_number):
-    msg_count = len(chat_history.get(phone_number, []))
+def get_rudeness_level(user_key):
+    msg_count = len(chat_history.get(user_key, []))
     if msg_count >= 10:
         return "PSI-09 is exhausted. Maximum aggression. Full rage mode. BURN"
     elif msg_count >= 6:
@@ -96,12 +73,11 @@ def get_rudeness_level(phone_number):
     else:
         return "First interaction. Set tone: cold, sharp, unfriendly."
 
-# Token count for trimming
 def num_tokens_from_messages(messages):
     return sum(len(ENCODING.encode(msg.get("content", ""))) for msg in messages)
 
-def trim_history(phone_number):
-    history = chat_history.get(phone_number, [])
+def trim_history(user_key):
+    history = chat_history.get(user_key, [])
     while num_tokens_from_messages(history) > MAX_HISTORY_TOKENS:
         if len(history) > 1:
             history.pop(0)
@@ -109,14 +85,13 @@ def trim_history(phone_number):
             break
     return history
 
-# Generate user memory summary
-def summarize_user_history(phone_number):
-    full_history = chat_history.get(phone_number, [])
+def summarize_user_history(user_key):
+    full_history = chat_history.get(user_key, [])
     if not full_history or len(full_history) < 6:
         return "No meaningful memory yet."
 
-    if phone_number in user_memory:
-        return user_memory[phone_number]
+    if user_key in user_memory:
+        return user_memory[user_key]
 
     summary_prompt = [
         {"role": "system", "content": (
@@ -133,17 +108,38 @@ def summarize_user_history(phone_number):
             temperature=0.6
         )
         summary = response.choices[0].message.content.strip()
-        user_memory[phone_number] = summary
+        user_memory[user_key] = summary
         with open(MEMORY_FILE, 'w') as f:
             json.dump(user_memory, f)
         return summary
     except:
         return "Memory unavailable due to error."
 
-def get_roast_response(user_message, phone_number):
+def is_group_roast_trigger(msg):
+    lower = msg.lower()
+    has_mention = bool(re.search(r"@\w+", msg))
+    return (
+        has_mention or
+        any(word in lower for word in ["everyone", "all of you", "guys", "group"]) or
+        len(msg.split()) > 50
+    )
+
+def get_roast_response(user_message, group_name, sender_name):
+    user_key = f"{group_name}:{sender_name}"
+    settings = get_user_settings(user_key)
+
+    is_flame_target = user_key == FLAME_TARGET
+    if (settings.get("flame_mode") or is_flame_target) and random.random() < 0.9:
+        user_message += " (Trigger Flame Mode)"
+
     roast_tag = get_roast_tag(user_message)
-    rudeness_tag = get_rudeness_level(phone_number)
-    memory_summary = summarize_user_history(phone_number)
+    rudeness_tag = get_rudeness_level(user_key)
+    memory_summary = summarize_user_history(user_key)
+
+    if is_group_roast_trigger(user_message):
+        roast_tag = "This is a group roast. Mock the whole group like they’re a failed class project."
+        rudeness_tag = "PSI-09 is in rage mode. Flame the group like a dragon with WiFi."
+        user_key = group_name
 
     system_prompt = {
         "role": "system",
@@ -162,9 +158,9 @@ def get_roast_response(user_message, phone_number):
         "content": f"User memory: {memory_summary}"
     }
 
-    chat = chat_history.get(phone_number, [])
+    chat = chat_history.get(user_key, [])
     chat.append({"role": "user", "content": f"[{roast_tag}]\n[{rudeness_tag}]\nMessage: {user_message}"})
-    trimmed_chat = trim_history(phone_number)
+    trimmed_chat = trim_history(user_key)
 
     messages = [system_prompt, memory_prompt] + trimmed_chat
 
@@ -182,7 +178,7 @@ def get_roast_response(user_message, phone_number):
         return f"Server error: {str(e)}"
 
     chat.append({"role": "assistant", "content": reply})
-    chat_history[phone_number] = chat
+    chat_history[user_key] = chat
     with open(HISTORY_FILE, 'w') as f:
         json.dump(chat_history, f)
 
@@ -197,15 +193,16 @@ def psi09():
 
         query = data["query"]
         user_message = query.get("message")
-        phone_number = query.get("sender")
+        group_name = query.get("group") or "DefaultGroup"
+        sender_name = query.get("author") or query.get("sender") or "Unknown"
 
         if user_message == "ping":
             return jsonify({"response": "pong"}), 200
 
-        if not user_message or not phone_number:
+        if not user_message or not sender_name:
             return jsonify({"error": "Missing 'message' or 'sender' in query"}), 400
 
-        response = get_roast_response(user_message, phone_number)
+        response = get_roast_response(user_message, group_name, sender_name)
 
         return jsonify({"replies": [{"message": response}]})
     except Exception as e:
