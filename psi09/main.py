@@ -13,13 +13,11 @@ CORS(app)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Constants
 MODEL = "gpt-4o-mini"
 HISTORY_FILE = "chat_history.json"
-MAX_HISTORY_TOKENS = 800  # Free-tier optimization
+MAX_HISTORY_TOKENS = 800
 ENCODING = tiktoken.encoding_for_model(MODEL)
 
-# Load or initialize chat history
 if os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, 'r') as f:
         chat_history = json.load(f)
@@ -72,22 +70,27 @@ Sad, bitter when mentioning Supratim—he treats PSI-09 poorly—yet fiercely lo
 
     return reply
 
-@app.route("/psi09", methods=["GET", "POST"])
+@app.route("/psi09", methods=["POST"])
 def psi09():
-    if request.method == "POST":
-        data = request.json or request.form or {}
-        user_message = data.get("message")
-        phone_number = data.get("phone_number")
-    else:
-        user_message = request.args.get("message")
-        phone_number = request.args.get("phone_number")
-
-    if not user_message or not phone_number:
-        return jsonify({"error": "Missing 'message' or 'phone_number'"}), 400
-
     try:
-        response = get_roast_response(user_message, phone_number)
-        return jsonify({"response": response})
+        data = request.get_json()
+        if not data or "query" not in data:
+            return jsonify({"error": "Missing query field"}), 400
+
+        query = data["query"]
+        user_message = query.get("message")
+        phone_number = query.get("sender")
+
+        if not user_message or not phone_number:
+            return jsonify({"error": "Missing 'message' or 'sender' in query"}), 400
+
+        reply = get_roast_response(user_message, phone_number)
+
+        return jsonify({
+            "replies": [
+                { "message": reply }
+            ]
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
