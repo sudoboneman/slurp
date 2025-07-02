@@ -58,7 +58,7 @@ def get_roast_response(user_message, phone_number):
         model=MODEL,
         messages=messages,
         max_tokens=170,
-        temperature=1.0
+        temperature=0.8
     )
 
     reply = response.choices[0].message.content
@@ -84,7 +84,11 @@ def psi09():
         if not user_message or not phone_number:
             return jsonify({"error": "Missing 'message' or 'sender' in query"}), 400
 
-        reply = get_roast_response(user_message, phone_number)
+        if user_message.lower() == "ping":
+            return jsonify({"response": "pong"})
+
+        response = get_roast_response(user_message, phone_number)
+
 
         return jsonify({
             "replies": [
