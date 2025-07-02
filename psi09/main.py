@@ -13,9 +13,6 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Set OpenAI key
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 # Constants
 MODEL = "gpt-4o-mini"  # or "gpt-4o-mini" if you're using API key for that
 HISTORY_FILE = "chat_history.json"
