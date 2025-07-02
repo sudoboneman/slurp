@@ -73,6 +73,11 @@ def get_roast_response(user_message, phone_number):
 @app.route("/psi09", methods=["POST"])
 def psi09():
     try:
+        if request.method == "GET":
+            if request.args.get("message") == "ping":
+                return jsonify({"response": "pong"}), 200
+            return jsonify({"error": "Only POST with proper query supported"}), 405
+
         data = request.get_json()
         if not data or "query" not in data:
             return jsonify({"error": "Missing query field"}), 400
@@ -81,11 +86,11 @@ def psi09():
         user_message = query.get("message")
         phone_number = query.get("sender")
 
+        if user_message == "ping":
+            return jsonify({"response": "pong"}), 200
+
         if not user_message or not phone_number:
             return jsonify({"error": "Missing 'message' or 'sender' in query"}), 400
-
-        if user_message.lower() == "ping":
-            return jsonify({"response": "pong"})
 
         response = get_roast_response(user_message, phone_number)
 
