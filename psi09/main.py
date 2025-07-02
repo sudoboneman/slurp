@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 import os
 import json
 import tiktoken
@@ -13,7 +13,7 @@ CORS(app)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-MODEL = "gpt-4o-mini"
+MODEL = "gpt-4.1-mini"
 HISTORY_FILE = "chat_history.json"
 MAX_HISTORY_TOKENS = 800
 ENCODING = tiktoken.encoding_for_model(MODEL)
@@ -99,7 +99,7 @@ def psi09():
 
         return jsonify({
             "replies": [
-                { "message": reply }
+                { "message": response }
             ]
         })
     except Exception as e:
