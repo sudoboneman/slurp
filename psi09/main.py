@@ -1,7 +1,7 @@
+from openai import OpenAI
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-import openai
 import json
 import os
 import tiktoken
@@ -61,12 +61,17 @@ Sad, bitter when mentioning Supratim—he treats PSI-09 poorly—yet fiercely lo
     trimmed_chat = trim_history(phone_number)
     messages = [system_prompt] + trimmed_chat
 
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    response = client.chat.completions.create(
         model=MODEL,
         messages=messages,
-        max_tokens=150,
-        temperature=0.9
+        max_tokens=200,
+        temperature=0.6
     )
+
+    reply = response.choices[0].message.content
+
 
     reply = response.choices[0].message.content
     chat.append({"role": "assistant", "content": reply})
