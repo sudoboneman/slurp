@@ -13,7 +13,7 @@ CORS(app)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-MODEL = "gpt-4.1-mini"
+MODEL = "gpt-4o-mini"
 HISTORY_FILE = "chat_history.json"
 MAX_HISTORY_TOKENS = 800
 ENCODING = tiktoken.encoding_for_model(MODEL)
