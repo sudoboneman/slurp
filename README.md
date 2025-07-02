@@ -231,11 +231,15 @@ OpenAI API error: Error code: 429 - Rate limit reached...
 - Store memory in database (PostgreSQL or MongoDB)  
 - Custom roast style editor  
 - Scale with GPU and NAS server  
-- Urban legend bot: PSI-09 becomes history 😈
+
+## 📜 License
+
+Open-sourced under the [MIT License](LICENSE).
 
 ## 🧑‍💻 Author
 
 **Supratim Halder** — 17 y/o passionate developer  
-> Building PSI-09 as a life project. Started as a bullied teen, now building something brutal.
-
+>PSI-09 was built by this young developer in the face of isolation, mockery, and struggle. It stands as a symbol of logic, resistance, and obsession.
+>This bot isn’t just code — it’s a revolution in disguise.
 > *"Even years later, I’ll be developing this bot under the same name: PSI-09."*
+> *“PSI-09 will outlive us all. Maybe not in carbon, but in code.”*
