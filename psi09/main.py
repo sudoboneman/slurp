@@ -15,7 +15,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 MODEL = "gpt-4o-mini"
 HISTORY_FILE = "chat_history.json"
-MAX_HISTORY_TOKENS = 450
+MAX_HISTORY_TOKENS = 400
 ENCODING = tiktoken.encoding_for_model(MODEL)
 
 if os.path.exists(HISTORY_FILE):
@@ -59,8 +59,8 @@ def get_roast_response(user_message, phone_number):
         response = client.chat.completions.create(
             model=MODEL,
             messages=messages,
-            max_tokens=150,
-            temperature=0.6
+            max_tokens=80,
+            temperature=0.7
         )
 
         reply = response.choices[0].message.content
