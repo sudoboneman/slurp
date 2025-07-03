@@ -19,7 +19,7 @@ MODEL = "gpt-4o-mini"
 HISTORY_FILE = "chat_history.json"
 MEMORY_FILE = "user_memory.json"
 SETTINGS_FILE = "user_settings.json"
-MAX_HISTORY_TOKENS = 600
+MAX_HISTORY_TOKENS = 500
 ENCODING = tiktoken.encoding_for_model(MODEL)
 
 if os.path.exists(HISTORY_FILE):
@@ -104,7 +104,7 @@ def summarize_user_history(user_key):
         response = client.chat.completions.create(
             model=MODEL,
             messages=summary_prompt,
-            max_tokens=60,
+            max_tokens=50,
             temperature=0.6
         )
         summary = response.choices[0].message.content.strip()
